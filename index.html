@@ -249,7 +249,7 @@
 <body>
 
 <header>
-  <div class="logo">analyse<span>.</span></div>
+  <div class="logo">analyse<span>.</span> <span style="font-size:0.65rem;font-weight:400;color:var(--muted);letter-spacing:0">v6</span></div>
   <div class="header-actions">
     <button class="icon-btn" id="refreshBtn" title="Oppdater" onclick="refreshFeed()">&#x21BB;</button>
     <button class="icon-btn" title="Innstillinger" onclick="openSettings()">&#x2699;</button>
@@ -507,7 +507,7 @@ async function summarise(cardId, link, title, fallbackText) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens: 1800, temperature: 0.3 }
+          generationConfig: { maxOutputTokens: 2048, temperature: 0.3, thinkingConfig: { thinkingBudget: 0 } }
         })
       }
     );
