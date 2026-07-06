@@ -16,6 +16,7 @@
       --text:      #f1f5f9;
       --muted:     #94a3b8;
       --accent:    #38bdf8;
+      --purple:    #a78bfa;
       --red:       #f87171;
       --green:     #4ade80;
       --radius:    12px;
@@ -71,7 +72,6 @@
       -webkit-overflow-scrolling: touch;
     }
     .tabs-wrapper::-webkit-scrollbar { display: none; }
-
     .tabs { display: flex; gap: 8px; padding-bottom: 10px; width: max-content; }
 
     .tab {
@@ -101,15 +101,19 @@
 
     #feed { padding: 12px 16px; display: flex; flex-direction: column; gap: var(--gap); }
 
+    /* ── Card ── */
     .card {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 14px; cursor: pointer;
-      transition: border-color .15s, transform .1s;
+      padding: 14px;
+      transition: border-color .15s;
+    }
+
+    .card-link {
       text-decoration: none; display: block; color: inherit;
     }
-    .card:active { transform: scale(0.985); border-color: var(--accent); }
+    .card-link:active .card-title { color: var(--accent); }
 
     .card-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
     .card-source {
@@ -125,6 +129,71 @@
       display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
     }
 
+    /* ── AI row ── */
+    .card-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+
+    .ai-btn {
+      display: flex; align-items: center; gap: 5px;
+      background: rgba(167,139,250,.12);
+      border: 1px solid rgba(167,139,250,.3);
+      color: var(--purple);
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-size: 0.75rem; font-weight: 600;
+      cursor: pointer;
+      transition: background .15s, border-color .15s;
+      white-space: nowrap;
+    }
+    .ai-btn:active { background: rgba(167,139,250,.25); }
+    .ai-btn.loading { opacity: .6; pointer-events: none; }
+
+    .open-btn {
+      display: flex; align-items: center; gap: 5px;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-size: 0.75rem; font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+      transition: border-color .15s, color .15s;
+      white-space: nowrap;
+    }
+    .open-btn:active { border-color: var(--accent); color: var(--accent); }
+
+    /* ── AI summary box ── */
+    .ai-summary {
+      margin-top: 10px;
+      background: rgba(167,139,250,.07);
+      border: 1px solid rgba(167,139,250,.2);
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 0.84rem;
+      color: #ddd6fe;
+      line-height: 1.6;
+      display: none;
+    }
+    .ai-summary.visible { display: block; }
+    .ai-summary-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--purple);
+      margin-bottom: 6px;
+    }
+    .ai-summary-text { white-space: pre-wrap; }
+    .ai-summary-error { color: var(--red); font-size: 0.8rem; }
+
+    /* ── Skeletons ── */
     .skeleton { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; overflow: hidden; }
     .skel-line {
       background: linear-gradient(90deg, var(--border) 25%, var(--surface) 50%, var(--border) 75%);
@@ -137,13 +206,13 @@
     .empty { text-align: center; color: var(--muted); padding: 48px 24px; font-size: 0.9rem; line-height: 1.6; }
     .empty .big { font-size: 2rem; margin-bottom: 12px; }
 
+    /* ── Settings sheet ── */
     .overlay {
       display: none; position: fixed; inset: 0;
       background: rgba(0,0,0,.6); z-index: 200;
       align-items: flex-end; backdrop-filter: blur(4px);
     }
     .overlay.open { display: flex; }
-
     .sheet {
       background: var(--surface); border-radius: 20px 20px 0 0;
       border-top: 1px solid var(--border);
@@ -152,7 +221,6 @@
     }
     .sheet-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
     .sheet h2 { font-size: 1rem; font-weight: 700; margin-bottom: 16px; color: var(--text); }
-
     .setting-row { margin-bottom: 16px; }
     .setting-row label { display: block; font-size: 0.78rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
     .setting-row input, .setting-row textarea {
@@ -161,6 +229,8 @@
       font-size: 0.85rem; padding: 10px 12px; outline: none; resize: vertical;
     }
     .setting-row input:focus, .setting-row textarea:focus { border-color: var(--accent); }
+    .setting-hint { font-size: 0.74rem; color: var(--muted); margin-top: 5px; line-height: 1.4; }
+    .setting-hint a { color: var(--accent); }
 
     .btn-row { display: flex; gap: 8px; margin-top: 20px; }
     .btn { flex: 1; padding: 12px; border-radius: 10px; font-size: 0.9rem; font-weight: 700; cursor: pointer; border: none; transition: opacity .15s; }
@@ -187,7 +257,6 @@
 </div>
 
 <div id="status"><span class="dot"></span> Klar</div>
-
 <div id="feed"></div>
 
 <div class="overlay" id="overlay" onclick="maybeClose(event)">
@@ -201,7 +270,15 @@
     </div>
 
     <div class="setting-row">
-      <label>RSS-kilder (en per linje: Navn | URL)</label>
+      <label>Gemini API-nokkel</label>
+      <input id="settingGemini" type="password" placeholder="AIza..." />
+      <div class="setting-hint">
+        Gratis nokkel fra <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com</a> &mdash; klikk "Create API key". Lagres kun lokalt i nettleseren din.
+      </div>
+    </div>
+
+    <div class="setting-row">
+      <label>RSS-kilder (ei per linje: Namn | URL)</label>
       <textarea id="settingFeeds" rows="10"></textarea>
     </div>
 
@@ -213,8 +290,8 @@
 </div>
 
 <script>
-// Sett inn din Cloudflare Worker-URL her etter at du har deployet den
-const DEFAULT_PROXY = "https://rss-proxy.bent-ingebretsen.workers.dev/";
+// Sett inn din Cloudflare Worker-URL her etter deploy
+const DEFAULT_PROXY = "https://WORKER_URL.workers.dev";
 
 const DEFAULT_FEEDS = [
   { name: "Minerva",       url: "https://www.minerva.no/?lab_viewport=rss" },
@@ -227,7 +304,8 @@ const DEFAULT_FEEDS = [
   { name: "Geopol",        url: "https://news.google.com/rss/search?q=site:geopol.no&hl=no&gl=NO&ceid=NO:no" },
 ];
 
-let proxyUrl  = localStorage.getItem("proxyUrl") || DEFAULT_PROXY;
+let proxyUrl  = localStorage.getItem("proxyUrl")  || DEFAULT_PROXY;
+let geminiKey = localStorage.getItem("geminiKey") || "";
 let feeds     = JSON.parse(localStorage.getItem("feeds") || "null") || DEFAULT_FEEDS;
 let activeIdx = parseInt(localStorage.getItem("activeIdx") || "0", 10);
 let loading   = false;
@@ -237,9 +315,11 @@ document.addEventListener("DOMContentLoaded", () => {
   loadFeed(activeIdx);
 });
 
+/* ── Tabs ── */
 function buildTabs() {
   document.getElementById("tabs").innerHTML = feeds.map((f, i) =>
-    '<button class="tab' + (i === activeIdx ? " active" : "") + '" onclick="selectTab(' + i + ')">' + f.name + "</button>"
+    '<button class="tab' + (i === activeIdx ? " active" : "") +
+    '" onclick="selectTab(' + i + ')">' + escHtml(f.name) + "</button>"
   ).join("");
 }
 
@@ -250,6 +330,7 @@ function selectTab(i) {
   loadFeed(i);
 }
 
+/* ── Feed loading ── */
 async function loadFeed(idx) {
   if (loading) return;
   const feed = feeds[idx];
@@ -277,6 +358,7 @@ async function loadFeed(idx) {
 
 function refreshFeed() { loadFeed(activeIdx); }
 
+/* ── RSS parser ── */
 function parseRSS(xml, sourceName) {
   const doc = new DOMParser().parseFromString(xml, "application/xml");
   const atomItems = doc.querySelectorAll("feed > entry");
@@ -309,36 +391,166 @@ function fmtDate(raw) {
   const d = new Date(raw);
   if (isNaN(d)) return raw.slice(0, 16);
   const diff = Math.floor((Date.now() - d) / 60000);
-  if (diff < 1)    return "Nå nettopp";
+  if (diff < 1)    return "Na nettopp";
   if (diff < 60)   return diff + " min siden";
   if (diff < 1440) return Math.floor(diff / 60) + "t siden";
   return d.toLocaleDateString("nb-NO", { day: "numeric", month: "short" });
 }
 
+/* ── Render ── */
 function renderArticles(items) {
   const feed = document.getElementById("feed");
   if (!items.length) {
-    feed.innerHTML = '<div class="empty"><div class="big">&#x1F4ED;</div>Ingen saker i denne feeden akkurat nå.</div>';
+    feed.innerHTML = '<div class="empty"><div class="big">&#x1F4ED;</div>Ingen saker i denne feeden akkurat na.</div>';
     return;
   }
-  feed.innerHTML = items.map(a =>
-    '<a class="card" href="' + escHtml(a.link) + '" target="_blank" rel="noopener">' +
-      '<div class="card-meta">' +
-        '<span class="card-source">' + escHtml(a.source) + "</span>" +
-        '<span class="card-date">' + fmtDate(a.date) + "</span>" +
-      "</div>" +
-      '<div class="card-title">' + escHtml(a.title) + "</div>" +
-      (a.summary ? '<div class="card-summary">' + escHtml(a.summary) + "</div>" : "") +
-    "</a>"
-  ).join("");
+  feed.innerHTML = items.map((a, i) => {
+    const id = "card-" + i;
+    return (
+      '<div class="card" id="' + id + '">' +
+        '<a class="card-link" href="' + escHtml(a.link) + '" target="_blank" rel="noopener">' +
+          '<div class="card-meta">' +
+            '<span class="card-source">' + escHtml(a.source) + "</span>" +
+            '<span class="card-date">' + fmtDate(a.date) + "</span>" +
+          "</div>" +
+          '<div class="card-title">' + escHtml(a.title) + "</div>" +
+          (a.summary ? '<div class="card-summary">' + escHtml(a.summary) + "</div>" : "") +
+        "</a>" +
+        '<div class="card-actions">' +
+          '<button class="ai-btn" onclick="summarise(\'' + id + '\', \'' + escAttr(a.link) + '\', \'' + escAttr(a.title) + '\', \'' + escAttr(a.summary) + '\')">' +
+            '&#x2728; Oppsummer' +
+          "</button>" +
+          '<a class="open-btn" href="' + escHtml(a.link) + '" target="_blank" rel="noopener">&#x2197; Apne</a>' +
+        "</div>" +
+        '<div class="ai-summary" id="sum-' + id + '">' +
+          '<div class="ai-summary-label">&#x2728; AI-sammendrag</div>' +
+          '<div class="ai-summary-text"></div>' +
+        "</div>" +
+      "</div>"
+    );
+  }).join("");
 }
 
+/* ── AI summarise ── */
+async function summarise(cardId, link, title, fallbackText) {
+  if (!geminiKey) {
+    alert("Legg inn Gemini API-nokkel i innstillinger (tannhjulet oppe til hoyre) forst.");
+    return;
+  }
+
+  const sumEl   = document.getElementById("sum-" + cardId);
+  const textEl  = sumEl.querySelector(".ai-summary-text");
+  const btn     = document.querySelector("#" + cardId + " .ai-btn");
+
+  // Toggle: klikk igjen for a skjule
+  if (sumEl.classList.contains("visible")) {
+    sumEl.classList.remove("visible");
+    btn.innerHTML = "&#x2728; Oppsummer";
+    return;
+  }
+
+  btn.classList.add("loading");
+  btn.innerHTML = '<span class="spin">&#x21BB;</span> Henter...';
+  sumEl.classList.add("visible");
+  textEl.className = "ai-summary-text";
+  textEl.textContent = "Henter artikkelinnhold...";
+
+  let articleText = "";
+
+  // Prover a hente fulltekst via proxy
+  try {
+    const base = proxyUrl.replace(/\/$/, "");
+    const resp = await fetch(base + "?url=" + encodeURIComponent(link));
+    if (resp.ok) {
+      const html = await resp.text();
+      articleText = extractReadableText(html);
+    }
+  } catch (e) {
+    // Fallback til RSS-beskrivelse
+  }
+
+  if (!articleText || articleText.length < 100) {
+    articleText = title + "\n\n" + fallbackText;
+  }
+
+  // Maks ~4000 tegn for a spare tokens
+  if (articleText.length > 4000) articleText = articleText.slice(0, 4000) + "...";
+
+  textEl.textContent = "Sender til Gemini...";
+
+  try {
+    const prompt =
+      "Les folgende artikkel og gi et konsist sammendrag pa 3-5 setninger pa norsk. " +
+      "Vektlegg hovedpoeng, viktige fakta og eventuelle konsekvenser.\n\n" +
+      "Tittel: " + title + "\n\n" +
+      articleText;
+
+    const resp = await fetch(
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + geminiKey,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { maxOutputTokens: 400, temperature: 0.3 }
+        })
+      }
+    );
+
+    if (!resp.ok) {
+      const err = await resp.json();
+      throw new Error(err.error?.message || "HTTP " + resp.status);
+    }
+
+    const data = await resp.json();
+    const summary = data.candidates?.[0]?.content?.parts?.[0]?.text || "(Tomt svar fra Gemini)";
+    textEl.className = "ai-summary-text";
+    textEl.textContent = summary;
+    btn.innerHTML = "&#x2728; Skjul";
+  } catch (err) {
+    textEl.className = "ai-summary-text ai-summary-error";
+    textEl.textContent = "Feil: " + err.message;
+    btn.innerHTML = "&#x2728; Oppsummer";
+  } finally {
+    btn.classList.remove("loading");
+  }
+}
+
+/* Trekker ut lesbar tekst fra HTML */
+function extractReadableText(html) {
+  const doc = new DOMParser().parseFromString(html, "text/html");
+
+  // Fjern uonsket innhold
+  ["script","style","nav","header","footer","aside","figure","iframe","noscript"].forEach(tag => {
+    doc.querySelectorAll(tag).forEach(el => el.remove());
+  });
+
+  // Prover vanlige artikkel-selektorer
+  const candidates = [
+    doc.querySelector("article"),
+    doc.querySelector("main"),
+    doc.querySelector('[class*="article"]'),
+    doc.querySelector('[class*="content"]'),
+    doc.querySelector('[class*="body"]'),
+    doc.body,
+  ];
+
+  for (const el of candidates) {
+    if (el) {
+      const text = el.textContent.replace(/\s+/g, " ").trim();
+      if (text.length > 200) return text;
+    }
+  }
+  return "";
+}
+
+/* ── Render helpers ── */
 function renderError(msg) {
   document.getElementById("feed").innerHTML =
     '<div class="empty"><div class="big">&#x26A0;&#xFE0F;</div>' +
     "<strong>Kunne ikke hente feeden</strong><br>" +
     '<small style="color:var(--red)">' + escHtml(msg) + "</small><br><br>" +
-    "Sjekk at Worker-URL-en er riktig i innstillinger (&#x2699;).</div>";
+    "Sjekk at Worker-URL-en er riktig i innstillinger.</div>";
 }
 
 function showSkeletons() {
@@ -371,9 +583,11 @@ function stopRefreshSpin() {
   btn.disabled = false;
 }
 
+/* ── Settings ── */
 function openSettings() {
-  document.getElementById("settingProxy").value = proxyUrl;
-  document.getElementById("settingFeeds").value = feeds.map(f => f.name + " | " + f.url).join("\n");
+  document.getElementById("settingProxy").value  = proxyUrl;
+  document.getElementById("settingGemini").value = geminiKey;
+  document.getElementById("settingFeeds").value  = feeds.map(f => f.name + " | " + f.url).join("\n");
   document.getElementById("overlay").classList.add("open");
 }
 function closeSettings() {
@@ -383,19 +597,33 @@ function maybeClose(e) {
   if (e.target === document.getElementById("overlay")) closeSettings();
 }
 function saveSettings() {
-  const newProxy = document.getElementById("settingProxy").value.trim();
-  if (newProxy) { proxyUrl = newProxy; localStorage.setItem("proxyUrl", proxyUrl); }
+  const p = document.getElementById("settingProxy").value.trim();
+  const g = document.getElementById("settingGemini").value.trim();
+  if (p) { proxyUrl = p; localStorage.setItem("proxyUrl", proxyUrl); }
+  if (g !== undefined) { geminiKey = g; localStorage.setItem("geminiKey", g); }
   const parsed = document.getElementById("settingFeeds").value.trim().split("\n")
-    .map(line => { const [name, ...rest] = line.split("|"); const url = rest.join("|").trim(); return name && url ? { name: name.trim(), url } : null; })
+    .map(line => {
+      const [name, ...rest] = line.split("|");
+      const url = rest.join("|").trim();
+      return name && url ? { name: name.trim(), url } : null;
+    })
     .filter(Boolean);
-  if (parsed.length) { feeds = parsed; localStorage.setItem("feeds", JSON.stringify(feeds)); if (activeIdx >= feeds.length) activeIdx = 0; }
+  if (parsed.length) {
+    feeds = parsed;
+    localStorage.setItem("feeds", JSON.stringify(feeds));
+    if (activeIdx >= feeds.length) activeIdx = 0;
+  }
   closeSettings();
   buildTabs();
   loadFeed(activeIdx);
 }
 
+/* ── Utils ── */
 function escHtml(s) {
   return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+function escAttr(s) {
+  return String(s).replace(/\\/g,"\\\\").replace(/'/g,"\\'").replace(/\n/g," ").replace(/\r/g,"");
 }
 </script>
 </body>
