@@ -191,6 +191,10 @@
       margin-bottom: 6px;
     }
     .ai-summary-text { white-space: pre-wrap; }
+    .ai-summary-text ul { padding-left: 18px; margin: 6px 0; }
+    .ai-summary-text li { margin-bottom: 4px; }
+    .ai-summary-text p  { margin-bottom: 8px; }
+    .ai-summary-text p:last-child { margin-bottom: 0; }
     .ai-summary-error { color: var(--red); font-size: 0.8rem; }
 
     /* ── Skeletons ── */
@@ -503,7 +507,7 @@ async function summarise(cardId, link, title, fallbackText) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens: 900, temperature: 0.3 }
+          generationConfig: { maxOutputTokens: 1800, temperature: 0.3 }
         })
       }
     );
@@ -516,7 +520,7 @@ async function summarise(cardId, link, title, fallbackText) {
     const data = await resp.json();
     const summary = data.candidates?.[0]?.content?.parts?.[0]?.text || "(Tomt svar fra Gemini)";
     textEl.className = "ai-summary-text";
-    textEl.textContent = summary;
+    textEl.innerHTML = renderMarkdown(summary);
     btn.innerHTML = "&#x2728; Skjul";
   } catch (err) {
     textEl.className = "ai-summary-text ai-summary-error";
@@ -627,6 +631,33 @@ function saveSettings() {
   closeSettings();
   buildTabs();
   loadFeed(activeIdx);
+}
+
+/* ── Enkel markdown-renderer ── */
+function renderMarkdown(text) {
+  return text
+    // Escape HTML forst
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    // Nummererte overskrifter som bold linje: "1. **Tittel:**"
+    .replace(/^(\d+)\.\s+\*\*(.+?)\*\*:?/gm, "<strong>$1. $2</strong>")
+    // Bold
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    // Kulepunkter (* eller -)
+    .replace(/^[\*\-]\s+(.+)/gm, "<li>$1</li>")
+    // Nummererte punkter (ikke allerede behandlet)
+    .replace(/^(\d+)\.\s+(?!<)(.+)/gm, "<li><strong>$1.</strong> $2</li>")
+    // Pakk li-elementer i ul
+    .replace(/(<li>.*<\/li>\n?)+/g, function(m) { return "<ul>" + m + "</ul>"; })
+    // Doble linjeskift = avsnitt
+    .replace(/\n{2,}/g, "</p><p>")
+    // Enkle linjeskift
+    .replace(/\n/g, "<br>")
+    // Pakk alt i p
+    .replace(/^(?!<)/, "<p>").replace(/(?<!>)$/, "</p>")
+    // Rydd opp tomme p
+    .replace(/<p><\/p>/g, "")
+    .replace(/<p>(<ul>)/g, "$1")
+    .replace(/(<\/ul>)<\/p>/g, "$1");
 }
 
 /* ── Utils ── */
