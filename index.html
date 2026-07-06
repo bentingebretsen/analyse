@@ -456,32 +456,43 @@ async function summarise(cardId, link, title, fallbackText) {
   textEl.textContent = "Henter artikkelinnhold...";
 
   let articleText = "";
+  let sourceLabel = "RSS-teaser";
 
-  // Prover a hente fulltekst via proxy
+  // Hent fulltekst via proxy
   try {
     const base = proxyUrl.replace(/\/$/, "");
     const resp = await fetch(base + "?url=" + encodeURIComponent(link));
     if (resp.ok) {
       const html = await resp.text();
-      articleText = extractReadableText(html);
+      const extracted = extractReadableText(html);
+      if (extracted.length > 200) {
+        articleText = extracted;
+        sourceLabel = "fulltekst (" + Math.round(extracted.length / 1000) + "k tegn)";
+      }
     }
   } catch (e) {
     // Fallback til RSS-beskrivelse
   }
 
-  if (!articleText || articleText.length < 100) {
+  if (!articleText || articleText.length < 200) {
     articleText = title + "\n\n" + fallbackText;
+    sourceLabel = "RSS-teaser";
   }
 
-  // Maks ~4000 tegn for a spare tokens
-  if (articleText.length > 4000) articleText = articleText.slice(0, 4000) + "...";
+  // Maks ~10 000 tegn
+  if (articleText.length > 10000) articleText = articleText.slice(0, 10000) + "...";
 
-  textEl.textContent = "Sender til Gemini...";
+  textEl.textContent = "Analyserer (" + sourceLabel + ")...";
 
   try {
     const prompt =
-      "Les folgende artikkel og gi et konsist sammendrag pa 3-5 setninger pa norsk. " +
-      "Vektlegg hovedpoeng, viktige fakta og eventuelle konsekvenser.\n\n" +
+      "Du er en analytisk leser med god kunnskap om norsk og internasjonal politikk, samfunn og ideer. " +
+      "Les folgende artikkel grundig og gi:\n" +
+      "1. Et sammendrag av hovedargumentet eller nyheten (2-3 setninger)\n" +
+      "2. De viktigste poengene eller faktaene (3-5 kulepunkter)\n" +
+      "3. Kontekst eller betydning: hva betyr dette, og for hvem? (1-2 setninger)\n\n" +
+      "Svar pa norsk. Vaer konkret og unnga generelle fraser.\n\n" +
+      "Kilde: " + sourceLabel + "\n" +
       "Tittel: " + title + "\n\n" +
       articleText;
 
@@ -492,7 +503,7 @@ async function summarise(cardId, link, title, fallbackText) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens: 400, temperature: 0.3 }
+          generationConfig: { maxOutputTokens: 900, temperature: 0.3 }
         })
       }
     );
