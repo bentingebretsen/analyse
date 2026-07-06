@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Analyse</title>
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#0f172a" />
+
+  <style>
+    :root {
+      --bg:        #0f172a;
+      --surface:   #1e293b;
+      --border:    #334155;
+      --text:      #f1f5f9;
+      --muted:     #94a3b8;
+      --accent:    #38bdf8;
+      --red:       #f87171;
+      --green:     #4ade80;
+      --radius:    12px;
+      --gap:       12px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    html { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 16px; }
+
+    body {
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: calc(env(safe-area-inset-bottom) + 16px);
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      top: env(safe-area-inset-top);
+      z-index: 100;
+      background: rgba(15, 23, 42, 0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+    }
+
+    .logo { font-size: 1.15rem; font-weight: 700; letter-spacing: -0.3px; color: var(--text); }
+    .logo span { color: var(--accent); }
+
+    .header-actions { display: flex; gap: 8px; }
+
+    .icon-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 8px;
+      width: 36px; height: 36px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 1rem;
+      transition: color .15s, background .15s;
+    }
+    .icon-btn:active { background: var(--border); color: var(--text); }
+
+    .tabs-wrapper {
+      overflow-x: auto; scrollbar-width: none;
+      padding: 10px 16px 0;
+      -webkit-overflow-scrolling: touch;
+    }
+    .tabs-wrapper::-webkit-scrollbar { display: none; }
+
+    .tabs { display: flex; gap: 8px; padding-bottom: 10px; width: max-content; }
+
+    .tab {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 0.82rem; font-weight: 500;
+      cursor: pointer; white-space: nowrap;
+      transition: all .15s; user-select: none;
+    }
+    .tab.active { background: var(--accent); border-color: var(--accent); color: #0f172a; font-weight: 700; }
+    .tab:not(.active):active { background: var(--border); color: var(--text); }
+
+    #status {
+      font-size: 0.78rem; color: var(--muted);
+      padding: 6px 16px 0; min-height: 22px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
+    .dot.loading { background: var(--accent); animation: pulse 1s infinite; }
+    .dot.ok  { background: var(--green); }
+    .dot.err { background: var(--red); }
+
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+    #feed { padding: 12px 16px; display: flex; flex-direction: column; gap: var(--gap); }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px; cursor: pointer;
+      transition: border-color .15s, transform .1s;
+      text-decoration: none; display: block; color: inherit;
+    }
+    .card:active { transform: scale(0.985); border-color: var(--accent); }
+
+    .card-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .card-source {
+      font-size: 0.7rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      color: var(--accent); background: rgba(56,189,248,.1);
+      border-radius: 4px; padding: 2px 6px;
+    }
+    .card-date { font-size: 0.72rem; color: var(--muted); margin-left: auto; }
+    .card-title { font-size: 0.97rem; font-weight: 600; line-height: 1.4; color: var(--text); margin-bottom: 6px; }
+    .card-summary {
+      font-size: 0.82rem; color: var(--muted); line-height: 1.5;
+      display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+    }
+
+    .skeleton { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; overflow: hidden; }
+    .skel-line {
+      background: linear-gradient(90deg, var(--border) 25%, var(--surface) 50%, var(--border) 75%);
+      background-size: 200% 100%; animation: shimmer 1.4s infinite;
+      border-radius: 4px; height: 12px; margin-bottom: 8px;
+    }
+    .skel-line.wide { width: 90%; } .skel-line.med { width: 60%; } .skel-line.short { width: 35%; height: 10px; }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+    .empty { text-align: center; color: var(--muted); padding: 48px 24px; font-size: 0.9rem; line-height: 1.6; }
+    .empty .big { font-size: 2rem; margin-bottom: 12px; }
+
+    .overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.6); z-index: 200;
+      align-items: flex-end; backdrop-filter: blur(4px);
+    }
+    .overlay.open { display: flex; }
+
+    .sheet {
+      background: var(--surface); border-radius: 20px 20px 0 0;
+      border-top: 1px solid var(--border);
+      padding: 20px 20px calc(env(safe-area-inset-bottom) + 20px);
+      width: 100%; max-height: 85vh; overflow-y: auto;
+    }
+    .sheet-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
+    .sheet h2 { font-size: 1rem; font-weight: 700; margin-bottom: 16px; color: var(--text); }
+
+    .setting-row { margin-bottom: 16px; }
+    .setting-row label { display: block; font-size: 0.78rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+    .setting-row input, .setting-row textarea {
+      width: 100%; background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); font-family: inherit;
+      font-size: 0.85rem; padding: 10px 12px; outline: none; resize: vertical;
+    }
+    .setting-row input:focus, .setting-row textarea:focus { border-color: var(--accent); }
+
+    .btn-row { display: flex; gap: 8px; margin-top: 20px; }
+    .btn { flex: 1; padding: 12px; border-radius: 10px; font-size: 0.9rem; font-weight: 700; cursor: pointer; border: none; transition: opacity .15s; }
+    .btn:active { opacity: .7; }
+    .btn-primary { background: var(--accent); color: #0f172a; }
+    .btn-secondary { background: var(--border); color: var(--muted); }
+
+    .spin { animation: spin .7s linear infinite; display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">analyse<span>.</span></div>
+  <div class="header-actions">
+    <button class="icon-btn" id="refreshBtn" title="Oppdater" onclick="refreshFeed()">&#x21BB;</button>
+    <button class="icon-btn" title="Innstillinger" onclick="openSettings()">&#x2699;</button>
+  </div>
+</header>
+
+<div class="tabs-wrapper">
+  <div class="tabs" id="tabs"></div>
+</div>
+
+<div id="status"><span class="dot"></span> Klar</div>
+
+<div id="feed"></div>
+
+<div class="overlay" id="overlay" onclick="maybeClose(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h2>Innstillinger</h2>
+
+    <div class="setting-row">
+      <label>Cloudflare Worker URL</label>
+      <input id="settingProxy" type="url" placeholder="https://rss-proxy.ditt-brukernavn.workers.dev" />
+    </div>
+
+    <div class="setting-row">
+      <label>RSS-kilder (en per linje: Navn | URL)</label>
+      <textarea id="settingFeeds" rows="10"></textarea>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="closeSettings()">Avbryt</button>
+      <button class="btn btn-primary" onclick="saveSettings()">Lagre og oppdater</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Sett inn din Cloudflare Worker-URL her etter at du har deployet den
+const DEFAULT_PROXY = "https://rss-proxy.bent-ingebretsen.workers.dev/";
+
+const DEFAULT_FEEDS = [
+  { name: "Minerva",       url: "https://www.minerva.no/?lab_viewport=rss" },
+  { name: "Morgenbladet",  url: "https://www.morgenbladet.no/?lab_viewport=rss" },
+  { name: "Dag og Tid",    url: "https://www.dagogtid.no/?lab_viewport=rss" },
+  { name: "Manifest",      url: "https://www.manifesttidsskrift.no/feed/" },
+  { name: "Samtiden",      url: "https://www.samtiden.no/?lab_viewport=rss" },
+  { name: "IP-tidsskrift", url: "https://tidsskriftet-ip.no/index.php/intpol/gateway/plugin/WebFeedGatewayPlugin/rss2" },
+  { name: "NUPI",          url: "https://news.google.com/rss/search?q=site:nupi.no&hl=no&gl=NO&ceid=NO:no" },
+  { name: "Geopol",        url: "https://news.google.com/rss/search?q=site:geopol.no&hl=no&gl=NO&ceid=NO:no" },
+];
+
+let proxyUrl  = localStorage.getItem("proxyUrl") || DEFAULT_PROXY;
+let feeds     = JSON.parse(localStorage.getItem("feeds") || "null") || DEFAULT_FEEDS;
+let activeIdx = parseInt(localStorage.getItem("activeIdx") || "0", 10);
+let loading   = false;
+
+document.addEventListener("DOMContentLoaded", () => {
+  buildTabs();
+  loadFeed(activeIdx);
+});
+
+function buildTabs() {
+  document.getElementById("tabs").innerHTML = feeds.map((f, i) =>
+    '<button class="tab' + (i === activeIdx ? " active" : "") + '" onclick="selectTab(' + i + ')">' + f.name + "</button>"
+  ).join("");
+}
+
+function selectTab(i) {
+  activeIdx = i;
+  localStorage.setItem("activeIdx", i);
+  buildTabs();
+  loadFeed(i);
+}
+
+async function loadFeed(idx) {
+  if (loading) return;
+  const feed = feeds[idx];
+  if (!feed) return;
+  loading = true;
+  setStatus("loading", "Henter " + feed.name + "...");
+  showSkeletons();
+  startRefreshSpin();
+  try {
+    const base = proxyUrl.replace(/\/$/, "");
+    const resp = await fetch(base + "?url=" + encodeURIComponent(feed.url));
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
+    const text = await resp.text();
+    const items = parseRSS(text, feed.name);
+    renderArticles(items);
+    setStatus("ok", items.length + " saker - " + timeNow());
+  } catch (err) {
+    renderError(err.message);
+    setStatus("err", "Feil: " + err.message);
+  } finally {
+    loading = false;
+    stopRefreshSpin();
+  }
+}
+
+function refreshFeed() { loadFeed(activeIdx); }
+
+function parseRSS(xml, sourceName) {
+  const doc = new DOMParser().parseFromString(xml, "application/xml");
+  const atomItems = doc.querySelectorAll("feed > entry");
+  if (atomItems.length) {
+    return Array.from(atomItems).map(e => ({
+      title:   e.querySelector("title")?.textContent?.trim() || "(uten tittel)",
+      link:    e.querySelector("link[rel='alternate']")?.getAttribute("href") || e.querySelector("link")?.getAttribute("href") || "#",
+      summary: stripHtml(e.querySelector("summary,content")?.textContent || ""),
+      date:    e.querySelector("updated,published")?.textContent || "",
+      source:  sourceName,
+    }));
+  }
+  return Array.from(doc.querySelectorAll("item")).map(e => ({
+    title:   e.querySelector("title")?.textContent?.trim() || "(uten tittel)",
+    link:    e.querySelector("link")?.textContent?.trim() || "#",
+    summary: stripHtml(e.querySelector("description")?.textContent || ""),
+    date:    e.querySelector("pubDate")?.textContent || "",
+    source:  sourceName,
+  }));
+}
+
+function stripHtml(html) {
+  const d = document.createElement("div");
+  d.innerHTML = html;
+  return d.textContent?.replace(/\s+/g, " ").trim() || "";
+}
+
+function fmtDate(raw) {
+  if (!raw) return "";
+  const d = new Date(raw);
+  if (isNaN(d)) return raw.slice(0, 16);
+  const diff = Math.floor((Date.now() - d) / 60000);
+  if (diff < 1)    return "Nå nettopp";
+  if (diff < 60)   return diff + " min siden";
+  if (diff < 1440) return Math.floor(diff / 60) + "t siden";
+  return d.toLocaleDateString("nb-NO", { day: "numeric", month: "short" });
+}
+
+function renderArticles(items) {
+  const feed = document.getElementById("feed");
+  if (!items.length) {
+    feed.innerHTML = '<div class="empty"><div class="big">&#x1F4ED;</div>Ingen saker i denne feeden akkurat nå.</div>';
+    return;
+  }
+  feed.innerHTML = items.map(a =>
+    '<a class="card" href="' + escHtml(a.link) + '" target="_blank" rel="noopener">' +
+      '<div class="card-meta">' +
+        '<span class="card-source">' + escHtml(a.source) + "</span>" +
+        '<span class="card-date">' + fmtDate(a.date) + "</span>" +
+      "</div>" +
+      '<div class="card-title">' + escHtml(a.title) + "</div>" +
+      (a.summary ? '<div class="card-summary">' + escHtml(a.summary) + "</div>" : "") +
+    "</a>"
+  ).join("");
+}
+
+function renderError(msg) {
+  document.getElementById("feed").innerHTML =
+    '<div class="empty"><div class="big">&#x26A0;&#xFE0F;</div>' +
+    "<strong>Kunne ikke hente feeden</strong><br>" +
+    '<small style="color:var(--red)">' + escHtml(msg) + "</small><br><br>" +
+    "Sjekk at Worker-URL-en er riktig i innstillinger (&#x2699;).</div>";
+}
+
+function showSkeletons() {
+  document.getElementById("feed").innerHTML = Array(5).fill(0).map(() =>
+    '<div class="skeleton">' +
+      '<div class="skel-line short" style="margin-bottom:10px"></div>' +
+      '<div class="skel-line wide"></div>' +
+      '<div class="skel-line med"></div>' +
+      '<div class="skel-line wide" style="height:10px"></div>' +
+    "</div>"
+  ).join("");
+}
+
+function setStatus(type, msg) {
+  document.getElementById("status").innerHTML = '<span class="dot ' + type + '"></span> ' + escHtml(msg);
+}
+
+function timeNow() {
+  return new Date().toLocaleTimeString("nb-NO", { hour: "2-digit", minute: "2-digit" });
+}
+
+function startRefreshSpin() {
+  const btn = document.getElementById("refreshBtn");
+  btn.innerHTML = '<span class="spin">&#x21BB;</span>';
+  btn.disabled = true;
+}
+function stopRefreshSpin() {
+  const btn = document.getElementById("refreshBtn");
+  btn.innerHTML = "&#x21BB;";
+  btn.disabled = false;
+}
+
+function openSettings() {
+  document.getElementById("settingProxy").value = proxyUrl;
+  document.getElementById("settingFeeds").value = feeds.map(f => f.name + " | " + f.url).join("\n");
+  document.getElementById("overlay").classList.add("open");
+}
+function closeSettings() {
+  document.getElementById("overlay").classList.remove("open");
+}
+function maybeClose(e) {
+  if (e.target === document.getElementById("overlay")) closeSettings();
+}
+function saveSettings() {
+  const newProxy = document.getElementById("settingProxy").value.trim();
+  if (newProxy) { proxyUrl = newProxy; localStorage.setItem("proxyUrl", proxyUrl); }
+  const parsed = document.getElementById("settingFeeds").value.trim().split("\n")
+    .map(line => { const [name, ...rest] = line.split("|"); const url = rest.join("|").trim(); return name && url ? { name: name.trim(), url } : null; })
+    .filter(Boolean);
+  if (parsed.length) { feeds = parsed; localStorage.setItem("feeds", JSON.stringify(feeds)); if (activeIdx >= feeds.length) activeIdx = 0; }
+  closeSettings();
+  buildTabs();
+  loadFeed(activeIdx);
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+</script>
+</body>
+</html>
