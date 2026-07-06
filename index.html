@@ -249,7 +249,7 @@
 <body>
 
 <header>
-  <div class="logo">analyse<span>.</span> <span style="font-size:0.65rem;font-weight:400;color:var(--muted);letter-spacing:0">v6</span></div>
+  <div class="logo">analyse<span>.</span> <span style="font-size:0.65rem;font-weight:400;color:var(--muted);letter-spacing:0">v8</span></div>
   <div class="header-actions">
     <button class="icon-btn" id="refreshBtn" title="Oppdater" onclick="refreshFeed()">&#x21BB;</button>
     <button class="icon-btn" title="Innstillinger" onclick="openSettings()">&#x2699;</button>
@@ -274,10 +274,13 @@
     </div>
 
     <div class="setting-row">
-      <label>Gemini API-nokkel</label>
-      <input id="settingGemini" type="password" placeholder="AIza..." />
+      <label>AI API-nokkel (Gemini, Groq eller Grok)</label>
+      <input id="settingGemini" type="password" placeholder="AIza...  /  gsk_...  /  xai-..." />
       <div class="setting-hint">
-        Gratis nokkel fra <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com</a> &mdash; klikk "Create API key". Lagres kun lokalt i nettleseren din.
+        Detekteres automatisk.<br>
+        Gemini: <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com</a> &nbsp;|&nbsp;
+        Groq: <a href="https://console.groq.com/keys" target="_blank">console.groq.com</a> &nbsp;|&nbsp;
+        Grok: <a href="https://console.x.ai" target="_blank">console.x.ai</a>
       </div>
     </div>
 
@@ -489,36 +492,7 @@ async function summarise(cardId, link, title, fallbackText) {
   textEl.textContent = "Analyserer (" + sourceLabel + ")...";
 
   try {
-    const prompt =
-      "Du er en analytisk leser med god kunnskap om norsk og internasjonal politikk, samfunn og ideer. " +
-      "Les folgende artikkel grundig og gi:\n" +
-      "1. Et sammendrag av hovedargumentet eller nyheten (2-3 setninger)\n" +
-      "2. De viktigste poengene eller faktaene (3-5 kulepunkter)\n" +
-      "3. Kontekst eller betydning: hva betyr dette, og for hvem? (1-2 setninger)\n\n" +
-      "Svar pa norsk. Vaer konkret og unnga generelle fraser.\n\n" +
-      "Kilde: " + sourceLabel + "\n" +
-      "Tittel: " + title + "\n\n" +
-      articleText;
-
-    const resp = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + geminiKey,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens: 2048, temperature: 0.3, thinkingConfig: { thinkingBudget: 0 } }
-        })
-      }
-    );
-
-    if (!resp.ok) {
-      const err = await resp.json();
-      throw new Error(err.error?.message || "HTTP " + resp.status);
-    }
-
-    const data = await resp.json();
-    const summary = data.candidates?.[0]?.content?.parts?.[0]?.text || "(Tomt svar fra Gemini)";
+    const summary = await callAI(geminiKey, title, articleText, sourceLabel);
     textEl.className = "ai-summary-text";
     textEl.innerHTML = renderMarkdown(summary);
     btn.innerHTML = "&#x2728; Skjul";
@@ -631,6 +605,79 @@ function saveSettings() {
   closeSettings();
   buildTabs();
   loadFeed(activeIdx);
+}
+
+/* ── AI-leverandor auto-deteksjon ── */
+function detectProvider(key) {
+  if (key.startsWith("gsk_"))  return "groq";
+  if (key.startsWith("xai-"))  return "grok";
+  return "gemini"; // AIza..., AQ..., eller annet Google-format
+}
+
+async function callAI(key, title, articleText, sourceLabel) {
+  const provider = detectProvider(key);
+
+  const systemPrompt =
+    "Du er en analytisk leser med god kunnskap om norsk og internasjonal politikk, samfunn og ideer. " +
+    "Svar alltid pa norsk. Vaer konkret og unnga generelle fraser.";
+
+  const userPrompt =
+    "Les folgende artikkel grundig og gi:\n" +
+    "1. Et sammendrag av hovedargumentet eller nyheten (2-3 setninger)\n" +
+    "2. De viktigste poengene eller faktaene (3-5 kulepunkter)\n" +
+    "3. Kontekst eller betydning: hva betyr dette, og for hvem? (1-2 setninger)\n\n" +
+    "Kilde: " + sourceLabel + "\n" +
+    "Tittel: " + title + "\n\n" +
+    articleText;
+
+  if (provider === "gemini") {
+    const resp = await fetch(
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + key,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: systemPrompt + "\n\n" + userPrompt }] }],
+          generationConfig: { maxOutputTokens: 2048, temperature: 0.3, thinkingConfig: { thinkingBudget: 0 } }
+        })
+      }
+    );
+    if (!resp.ok) { const e = await resp.json(); throw new Error(e.error?.message || "Gemini HTTP " + resp.status); }
+    const data = await resp.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || "(Tomt svar fra Gemini)";
+  }
+
+  if (provider === "groq") {
+    const resp = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile",
+        messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }],
+        max_tokens: 2048, temperature: 0.3
+      })
+    });
+    if (!resp.ok) { const e = await resp.json(); throw new Error(e.error?.message || "Groq HTTP " + resp.status); }
+    const data = await resp.json();
+    return data.choices?.[0]?.message?.content || "(Tomt svar fra Groq)";
+  }
+
+  if (provider === "grok") {
+    const resp = await fetch("https://api.x.ai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
+      body: JSON.stringify({
+        model: "grok-3-mini",
+        messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }],
+        max_tokens: 2048, temperature: 0.3
+      })
+    });
+    if (!resp.ok) { const e = await resp.json(); throw new Error(e.error?.message || "Grok HTTP " + resp.status); }
+    const data = await resp.json();
+    return data.choices?.[0]?.message?.content || "(Tomt svar fra Grok)";
+  }
+
+  throw new Error("Ukjent API-nokkel. Sjekk at den er riktig kopiert.");
 }
 
 /* ── Enkel markdown-renderer ── */
